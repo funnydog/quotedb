@@ -12,22 +12,22 @@ $VERSION = "0.01";
     license => "Public Domain",
     );
 
+# configuration variables
 my $database_path;
 my %target_channels;
 Irssi::settings_add_str("quotes", "quotes_database", "database.db");
 Irssi::settings_add_str("quotes", "quotes_channels", "##fdt");
 
-# reload signal
-Irssi::signal_add("setup changed", \&reload_settings);
-sub reload_settings {
+# load the configuration variables
+sub load_settings {
     $database_path = Irssi::settings_get_str("quotes_database");
     %target_channels = map { $_ => 1 } split / /, Irssi::settings_get_str("quotes_channels");
 }
-reload_settings();
+Irssi::signal_add("setup changed", \&load_settings);
+load_settings();
 
 # incoming messages from other clients
-Irssi::signal_add_last("message public", \&autoanswer);
-sub autoanswer
+sub incoming
 {
     my ($server, $msg, $nick, $address, $target) = @_;
 
@@ -78,21 +78,22 @@ sub autoanswer
 	}
     }
 }
+Irssi::signal_add_last("message public", \&incoming);
 
 # outgoing messages from our client
-Irssi::signal_add_last("send command", \&outgoing);
 sub outgoing
 {
     my ($msg, $server, $channel) = @_;
 
     return if $channel->{type} ne 'CHANNEL';
-    autoanswer($server, $msg, "", "", $channel->{name});
+    incoming($server, $msg, "", "", $channel->{name});
 }
+Irssi::signal_add_last("send command", \&outgoing);
 
 # unregister the signals
 sub UNLOAD
 {
     Irssi::signal_remove("send command", \&outgoing);
-    Irssi::signal_remove("message public", \&autoanswer);
-    Irssi::signal_remove("setup changed", \&reload_settings);
+    Irssi::signal_remove("message public", \&incoming);
+    Irssi::signal_remove("setup changed", \&load_settings);
 }
