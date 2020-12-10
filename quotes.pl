@@ -23,8 +23,7 @@ sub reload_settings {
     $database_path = Irssi::settings_get_str("quotes_database");
     %target_channels = map { $_ => 1 } split / /, Irssi::settings_get_str("quotes_channels");
 }
-$database_path = Irssi::settings_get_str("quotes_database");
-%target_channels = map { $_ => 1 } split / /, Irssi::settings_get_str("quotes_channels");
+reload_settings();
 
 # incoming messages from other clients
 Irssi::signal_add_last("message public", \&autoanswer);
