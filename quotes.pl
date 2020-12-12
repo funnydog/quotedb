@@ -13,30 +13,32 @@ $VERSION = "0.01";
     );
 
 # global variables
-my $last_addquote;
+my $last_addquote = "";
 
 # configuration variables
 my $database_path;
 my %target_channels;
-my $lurking_mode;
 my $lurking_nickname;
+my $lurking_mode = 0;
 Irssi::settings_add_str("quotes", "quotes_database", "database.db");
 Irssi::settings_add_str("quotes", "quotes_channels", "##fdt");
-Irssi::settings_add_bool("quotes", "quotes_lurking_mode", 0);
 Irssi::settings_add_str("quotes", "quotes_lurking_nickname", "");
+Irssi::settings_add_bool("quotes", "quotes_lurking_mode", 0);
 
 # load the configuration variables
 sub load_settings {
     $database_path = Irssi::settings_get_str("quotes_database");
     %target_channels = map { $_ => 1 } split / /, Irssi::settings_get_str("quotes_channels");
     $lurking_nickname = Irssi::settings_get_str("quotes_lurking_nickname");
-    my $new_mode = Irssi::settings_get_bool("quotes_lurking_mode");
+
+    my $new_mode;
     if ($lurking_nickname eq "") {
 	$new_mode = 0;
     } else {
 	$new_mode = Irssi::settings_get_bool("quotes_lurking_mode");
     }
-    if ($new_mode != $lurking_mode) {
+    if ($new_mode != $lurking_mode)
+    {
 	$lurking_mode = $new_mode;
 	$last_addquote = "";
     }
