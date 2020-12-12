@@ -56,7 +56,9 @@ There are four variables to configure:
   * **quotes_lurking_nickname** the nickname who respond to the
     !addquote command.
 
-To set them use the irssi command `/set <variable> <value>`.
+To set them use the irssi command `/set <variable> <value>`. Once set
+you can save the whole configuration with the command
+`/save`. This way the variables will survive irssi restarts.
 
 The commands understood by the script are the following:
 
