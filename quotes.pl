@@ -79,7 +79,7 @@ sub incoming
 	}
 	elsif ($msg =~ m/^!quote$/)
 	{
-	    $server->command("MSG $target " . quote(""));
+	    $server->command("MSG $target " . quote());
 	}
 	elsif ($msg =~ m/^!addquote (.*)$/)
 	{
@@ -95,25 +95,30 @@ Irssi::signal_add_last("message public", \&incoming);
 
 sub quote
 {
-    my $msg = "[$_[0]]";
-    if (my $dbh = DBI->connect("dbi:SQLite:dbname=$database_path", "", "")) {
-	if ($_[0] eq "") {
-	    my $sql = q{SELECT id, quote FROM quotes ORDER BY RANDOM() LIMIT 1;};
-	    if (my $stmt = $dbh->prepare($sql)) {
-		if ($stmt->execute()) {
-		    if (my @row = $stmt->fetchrow_array) {
-			$msg = "[$row[0]] $row[1]";
-		    }
-		}
-	    }
+    my $id = shift;
+    my $msg = "!quote failed :(";
+    if (my $dbh = DBI->connect("dbi:SQLite:dbname=$database_path", "", ""))
+    {
+	my $sql;
+	if (defined($id)) {
+	    $sql = q{SELECT id, quote FROM quotes WHERE id = ?;};
 	} else {
-	    my $sql = q{SELECT id, quote FROM quotes WHERE id = ?;};
-	    if (my $stmt = $dbh->prepare($sql)) {
-		if ($stmt->execute($_[0])) {
-		    if (my @row = $stmt->fetchrow_array) {
-			$msg = "[$row[0]] $row[1]";
-		    }
+	    $sql = q{SELECT id, quote FROM quotes ORDER BY RANDOM() LIMIT 1;};
+	}
+	if (my $stmt = $dbh->prepare($sql))
+	{
+	    if (defined($id) && !$stmt->bind_param(1, $id))
+	    {
+		Irssi::print("error binding the parameter");
+	    }
+	    elsif ($stmt->execute())
+	    {
+		if (my @row = $stmt->fetchrow_array) {
+		    $msg = "[$row[0]] $row[1]";
+		} elsif (defined($id)) {
+		    $msg = "[$id]";
 		}
+		$stmt->finish;
 	    }
 	}
 	$dbh->disconnect;
@@ -130,6 +135,7 @@ sub addquote
 	    if ($stmt && $stmt->execute($_[0])) {
 		$success = 1;
 	    }
+	    $stmt->finish;
 	}
 	$dbh->disconnect;
     }
