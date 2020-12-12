@@ -128,17 +128,18 @@ Irssi::signal_add_last("message public", \&incoming);
 # outgoing messages from our client
 sub outgoing
 {
-    my ($msg, $server, $channel) = @_;
-
-    return if $channel->{type} ne 'CHANNEL';
-    incoming($server, $msg, "", "", $channel->{name});
+    Irssi::timeout_add_once(
+	100, sub {
+	    my $a = shift;
+	    incoming($a->[0], $a->[1], "", "", $a->[2]);
+	}, \@_);
 }
-Irssi::signal_add_last("send command", \&outgoing);
+Irssi::signal_add_last("message own_public", \&outgoing);
 
 # unregister the signals
 sub UNLOAD
 {
-    Irssi::signal_remove("send command", \&outgoing);
+    Irssi::signal_remove("message own_public", \&outgoing);
     Irssi::signal_remove("message public", \&incoming);
     Irssi::signal_remove("setup changed", \&load_settings);
 }
