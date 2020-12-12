@@ -86,7 +86,7 @@ sub incoming
 	    if (addquote($1)) {
 		$server->command("MSG $target Quote added!");
 	    } else {
-		$server->command("MSG $target addquote failed :(");
+		$server->command("MSG $target !addquote failed :(");
 	    }
 	}
     }
