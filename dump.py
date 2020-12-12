@@ -13,7 +13,6 @@ if __name__ == "__main__":
         print("Usage: {} <filename1> [<filename2> ... <filenameN>]".format(sys.argv[0]), file=sys.stderr)
         exit(1)
 
-
     # read the quotes and the addquotes
     quotes = []
     addquotes = []
@@ -42,48 +41,36 @@ if __name__ == "__main__":
 
     # try to assign a number to each addquote
     quotemap = {s: n for n, s in quotes}
-    start = 0
+    synchronized = False
+    counter = 0
     for aq in addquotes:
         num = quotemap.get(aq)
         if num:
-            start = num + 1
-            continue
+            synchronized = True
+            counter = num
+        elif synchronized:
+            quotes.append((counter, aq))
+        counter += 1
 
-        quotes.append((start, aq))
-        start += 1
-
-    # filter duplicates and print missing quotes
-    lst = []
-    quotes.sort(key=lambda x: x[0])
-    counter = 0
-    for tup in quotes:
-        while counter < tup[0]:
-            print("missing {}".format(counter))
-            counter +=1
-
-        # skip duplicates
-        if counter == tup[0]:
-            counter += 1
-            lst.append(tup)
-
-    try:
-        conn = sqlite3.connect("database.db")
-        model = """
-CREATE TABLE IF NOT EXISTS quotes (
-        id integer PRIMARY KEY,
-        quote text NOT NULL
-);"""
+    # insert the quotes into a sqlite db
+    with sqlite3.connect("database.db") as conn:
         cur = conn.cursor()
+        model = "CREATE TABLE IF NOT EXISTS quotes (id integer PRIMARY KEY, quote text NOT NULL);"
         cur.execute(model)
-        truncate = """DELETE FROM quotes;"""
+        truncate = "DELETE FROM quotes;"
         cur.execute(truncate)
-        insert = """INSERT INTO quotes(id, quote) VALUES(?, ?);"""
-        for keyval in lst:
-            cur.execute(insert, keyval)
+        insert = "INSERT INTO quotes(id, quote) VALUES(?, ?);"
+        quotes.sort(key = lambda x: x[0])
+        counter = 0
+        for keyval in quotes:
+            # report missing quotes
+            while counter < keyval[0]:
+                print("Quote {} is missing.".format(counter))
+                counter += 1
+
+            # skip duplicates
+            if counter == keyval[0]:
+                cur.execute(insert, keyval)
+                counter += 1
 
         conn.commit()
-    except sqlite3.Error as e:
-        print(e)
-    finally:
-        if conn:
-            conn.close()
