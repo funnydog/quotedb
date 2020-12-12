@@ -51,9 +51,26 @@ sub incoming
 
     return if !exists($target_channels{$target});
 
-    if ($lurking_mode == 0)
+    if ($lurking_mode)
     {
-	# normal mode with all the commands
+	# in lurking mode we look for two patterns: !addquote and Quote added!
+	if ($msg =~ m/^!addquote (.*)$/)
+	{
+	    $last_addquote = $1;
+	}
+	elsif ($nick eq $lurking_nickname && $msg =~ m/^Quote added!$/)
+	{
+	    if (addquote($last_addquote)) {
+		Irssi::print("New quote added for $target")
+	    } else {
+		Irssi::print("Addquote failed for $target");
+	    }
+	    $last_addquote = "";
+	}
+    }
+    else
+    {
+	# normal mode with: !quote <id>, !quote, !addquote <txt>
 	if ($msg =~ m/^!quote (\d+)$/)
 	{
 	    $server->command("MSG $target " . quote($1));
@@ -69,23 +86,6 @@ sub incoming
 	    } else {
 		$server->command("MSG $target addquote failed :(");
 	    }
-	}
-    }
-    else
-    {
-	# in lurking mode we look for two patterns: !addquote and Quote added!
-	if ($msg =~ m/^!addquote (.*)$/)
-	{
-	    $last_addquote = $1;
-	}
-	elsif ($nick eq $lurking_nickname && $msg =~ m/^Quote added!$/)
-	{
-	    if (addquote($last_addquote)) {
-		Irssi::print("New quote added for $target")
-	    } else {
-		Irssi::print("Addquote failed for $target");
-	    }
-	    $last_addquote = "";
 	}
     }
 }
