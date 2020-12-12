@@ -56,46 +56,18 @@ sub incoming
 	# normal mode with all the commands
 	if ($msg =~ m/^!quote (\d+)$/)
 	{
-	    my $sql = q{SELECT id, quote FROM quotes WHERE id = ?;};
-	    if (my $dbh = DBI->connect("dbi:SQLite:dbname=$database_path", "", "")) {
-		if (my $stmt = $dbh->prepare($sql)) {
-		    if ($stmt->execute($1)) {
-			if (my @row = $stmt->fetchrow_array) {
-			    $server->command("MSG $target [$row[0]] $row[1]");
-			} else {
-			    $server->command("MSG $target [$1]");
-			}
-		    }
-		}
-		$dbh->disconnect;
-	    }
+	    $server->command("MSG $target " . quote($1));
 	}
 	elsif ($msg =~ m/^!quote$/)
 	{
-	    my $sql = q{SELECT id, quote FROM quotes ORDER BY RANDOM() LIMIT 1;};
-	    if (my $dbh = DBI->connect("dbi:SQLite:dbname=$database_path", "", "")) {
-		if (my $stmt = $dbh->prepare($sql)) {
-		    if ($stmt->execute()) {
-			while (my @row = $stmt->fetchrow_array) {
-			    $server->command("MSG $target [$row[0]] $row[1]");
-			}
-		    }
-		}
-		$dbh->disconnect;
-	    }
+	    $server->command("MSG $target " . quote(""));
 	}
 	elsif ($msg =~ m/^!addquote (.*)$/)
 	{
-	    my $sql = q{INSERT INTO quotes(quote) VALUES(?);};
-	    if (my $dbh = DBI->connect("dbi:SQLite:dbname=$database_path", "", "")) {
-		if (my $stmt = $dbh->prepare($sql)) {
-		    if ($stmt && $stmt->execute($1)) {
-			$server->command("MSG $target Quote added!");
-		    } else {
-			$server->command("MSG $target addquote failed :(");
-		    }
-		}
-		$dbh->disconnect;
+	    if (addquote($1)) {
+		$server->command("MSG $target Quote added!");
+	    } else {
+		$server->command("MSG $target addquote failed :(");
 	    }
 	}
     }
@@ -108,22 +80,59 @@ sub incoming
 	}
 	elsif ($nick eq $lurking_nickname && $msg =~ m/^Quote added!$/)
 	{
-	    my $sql = q{INSERT INTO quotes(quote) VALUES(?);};
-	    if (my $dbh = DBI->connect("dbi:SQLite:dbname=$database_path", "", "")) {
-		if (my $stmt = $dbh->prepare($sql)) {
-		    if ($stmt && $stmt->execute($last_addquote)) {
-			Irssi::print("New quote added for $target")
-		    } else {
-			Irssi::print("Addquote failed for $target");
-		    }
-		}
-		$dbh->disconnect;
+	    if (addquote($last_addquote)) {
+		Irssi::print("New quote added for $target")
+	    } else {
+		Irssi::print("Addquote failed for $target");
 	    }
 	    $last_addquote = "";
 	}
     }
 }
 Irssi::signal_add_last("message public", \&incoming);
+
+sub quote
+{
+    my $msg = "[$_[0]]";
+    if (my $dbh = DBI->connect("dbi:SQLite:dbname=$database_path", "", "")) {
+	if ($_[0] eq "") {
+	    my $sql = q{SELECT id, quote FROM quotes ORDER BY RANDOM() LIMIT 1;};
+	    if (my $stmt = $dbh->prepare($sql)) {
+		if ($stmt->execute()) {
+		    if (my @row = $stmt->fetchrow_array) {
+			$msg = "[$row[0]] $row[1]";
+		    }
+		}
+	    }
+	} else {
+	    my $sql = q{SELECT id, quote FROM quotes WHERE id = ?;};
+	    if (my $stmt = $dbh->prepare($sql)) {
+		if ($stmt->execute($_[0])) {
+		    if (my @row = $stmt->fetchrow_array) {
+			$msg = "[$row[0]] $row[1]";
+		    }
+		}
+	    }
+	}
+	$dbh->disconnect;
+    }
+    return $msg;
+}
+
+sub addquote
+{
+    my $success = 0;
+    if (my $dbh = DBI->connect("dbi:SQLite:dbname=$database_path", "", "")) {
+	my $sql = q{INSERT INTO quotes(quote) VALUES(?);};
+	if (my $stmt = $dbh->prepare($sql)) {
+	    if ($stmt && $stmt->execute($_[0])) {
+		$success = 1;
+	    }
+	}
+	$dbh->disconnect;
+    }
+    return $success;
+}
 
 # outgoing messages from our client
 sub outgoing
