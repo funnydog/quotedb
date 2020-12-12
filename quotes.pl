@@ -13,7 +13,7 @@ $VERSION = "0.01";
     );
 
 # global variables
-my $last_addquote = "";
+my $last_addquote;
 
 # configuration variables
 my $database_path;
@@ -40,7 +40,7 @@ sub load_settings {
     if ($new_mode != $lurking_mode)
     {
 	$lurking_mode = $new_mode;
-	$last_addquote = "";
+	$last_addquote = undef;
     }
 }
 Irssi::signal_add("setup changed", \&load_settings);
@@ -60,14 +60,14 @@ sub incoming
 	{
 	    $last_addquote = $1;
 	}
-	elsif ($nick eq $lurking_nickname && $msg =~ m/^Quote added!$/)
+	elsif (defined($last_addquote) && $nick eq $lurking_nickname && $msg =~ m/^Quote added!$/)
 	{
 	    if (addquote($last_addquote)) {
 		Irssi::print("New quote added for $target")
 	    } else {
 		Irssi::print("Addquote failed for $target");
 	    }
-	    $last_addquote = "";
+	    $last_addquote = undef;
 	}
     }
     else
