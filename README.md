@@ -45,11 +45,16 @@ use CPAN.
 After installing the dependencies put `quotes.pl` in
 `$HOME/.irssi/scripts` and load it with `/script load quotes`.
 
-You should configure two variables:
+There are four variables to configure:
 
   * **quotes_database** the full path of the quotes database;
   * **quotes_channels** a space separated list of channels where the
-    script looks for commands.
+    script looks for commands;
+  * **quotes_lurking_mode** set to ON the scripts won't output
+    anything to the channels but only listen for !addquote and Quote
+    added! patterns;
+  * **quotes_lurking_nickname** the nickname who respond to the
+    !addquote command.
 
 To set them use the irssi command `/set <variable> <value>`.
 
@@ -59,7 +64,11 @@ The commands understood by the script are the following:
   * **!quote \<id\>** prints the quote associated with the given id;
   * **!addquote \<text\>** adds a new quote to the database.
 
-You can unload and therefore disable the script any time using the irssi command `/script unload quotes`.
+In lurking mode only **!addquote** works, and any output is not echoed
+on the channel but printed on the screen instead.
+
+You can unload and therefore disable the script any time using the
+irssi command `/script unload quotes`.
 
 ## License
 
